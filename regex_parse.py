@@ -17,7 +17,7 @@ class PortionExtractor:
         self.pattern = regex.compile(r"""(\(U\))|
                                          (\(U\/\/FOUO\))|
                                          (\(S\))|
-                                         (\(CUI\)|                                                         
+                                         (\(CUI\))|                                                         
                                          (\(S\/\/NF\))|
                                          (\(S\/\/REL\ TO\ USA,\ FVEY\))""",
                                          flags=regex.VERBOSE)
@@ -32,7 +32,9 @@ class PortionExtractor:
 
     def __call__(self, pdf_paths: List[str]) -> List[str]:
         
-        portions = []
+        portions = {'Document Name': [],
+                    'Page Number': [], 
+                    'Text Portion': []}
 
         for pdf in pdf_paths:
             doc = fitz.open(pdf)
@@ -40,9 +42,12 @@ class PortionExtractor:
 
             for page_num,page in enumerate(doc):
                 text = page.get_text('text') # get text from each page
-                clean_matches = self.filter_matches(regex.split(self.pattern, text)) # filter regex matches
-                portions.extend([(doc_name, page_num, match) 
-                                 for match in self.preprocess_matches(clean_matches)]) # save document name, page number, and text portion
+                filtered_matches = self.filter_matches(regex.split(self.pattern, text)) # filter regex matches
+                clean_matches = self.preprocess_matches(filtered_matches)
+
+                portions['Document Name'].extend([doc_name] * len(clean_matches))
+                portions['Page Number'].extend([page_num] * len(clean_matches))
+                portions['Text Portion'].extend(clean_matches)
         
         return portions
 
@@ -62,7 +67,8 @@ class PortionExtractor:
 if __name__ == '__main__':
 
     extractor = PortionExtractor()
-    portions = extractor([sys.argv[1]])
+    portions = extractor(sys.argv[1:])
+    df = pd.DataFrame(portions)
     print(portions)
         
     
