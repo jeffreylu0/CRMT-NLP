@@ -2,7 +2,7 @@ import fitz
 import regex
 import sys
 import pandas as pd
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 from textacy.preprocessing import pipeline, normalize, remove
 
@@ -30,7 +30,7 @@ class PortionExtractor:
                                               normalize.quotation_marks,
                                               remove.accents)
 
-    def __call__(self, pdf_paths: List[str]) -> List[str]:
+    def __call__(self, pdf_paths: List[str]) -> Dict[str, List]:
         
         portions = {'Document Name': [],
                     'Page Number': [], 
