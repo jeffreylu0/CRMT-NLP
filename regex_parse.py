@@ -1,10 +1,10 @@
 import fitz
 import regex
 import sys
+import pandas as pd
 from typing import List
 from pathlib import Path
 from textacy.preprocessing import pipeline, normalize, remove
-
 
 class PortionExtractor:
 
@@ -17,7 +17,8 @@ class PortionExtractor:
         self.pattern = regex.compile(r"""(\(U\))|
                                          (\(U\/\/FOUO\))|
                                          (\(S\))|
-                                         (\(CUI\)|                                                         (\(S\/\/NF\))|
+                                         (\(CUI\)|                                                         
+                                         (\(S\/\/NF\))|
                                          (\(S\/\/REL\ TO\ USA,\ FVEY\))""",
                                          flags=regex.VERBOSE)
 
@@ -28,16 +29,22 @@ class PortionExtractor:
                                               normalize.hyphenated_words,
                                               normalize.quotation_marks,
                                               remove.accents)
-    def __call__(self, pdf_path: str):
 
-        doc = fitz.open(pdf_path)
-        portions = []
-        for page_num,page in enumerate(doc):
-            text = page.get_text('text') # get text from each page
-            clean_matches = self.filter_matches(regex.split(self.pattern, text)) # filter regex matches
-            portions.extend([(page_num,match) for match in self.preprocess_matches(clean_matches)]) #
+    def __call__(self, pdf_paths: List[str]) -> List[str]:
         
-        return portions, Path(doc.name).stem # return text portions, document name
+        portions = []
+
+        for pdf in pdf_paths:
+            doc = fitz.open(pdf)
+            doc_name = Path(doc.name).stem
+
+            for page_num,page in enumerate(doc):
+                text = page.get_text('text') # get text from each page
+                clean_matches = self.filter_matches(regex.split(self.pattern, text)) # filter regex matches
+                portions.extend([(doc_name, page_num, match) 
+                                 for match in self.preprocess_matches(clean_matches)]) # save document name, page number, and text portion
+        
+        return portions
 
     def filter_matches(self, matches: List[str]) -> List[str]:
 
@@ -52,12 +59,10 @@ class PortionExtractor:
         # Preprocess and remove newlines                                    
         return [self.preprocessor(match).replace('\n', '') for match in matches]
     
-
-
 if __name__ == '__main__':
 
     extractor = PortionExtractor()
-    portions = extractor(sys.argv[1])
+    portions = extractor([sys.argv[1]])
     print(portions)
         
     
