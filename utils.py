@@ -2,9 +2,22 @@ import fitz
 import regex
 import sys
 import pandas as pd
-from typing import List, Dict
+from typing import List, Dict, Union
 from pathlib import Path
 from textacy.preprocessing import pipeline, normalize, remove
+
+
+def extract_df(pdf_path: Union[Path, str]) -> pd.DataFrame:
+    extractor = PortionExtractor()
+    portions = extractor(pdf_path)
+
+    return pd.DataFrame(portions)
+
+def extract_csv(pdf_path: Union[Path, str], 
+                output_path: Union[Path, str] = Path.cwd()) -> None:
+    
+    df = extract_df(pdf_path)
+    df.to_csv(output_path)
 
 class PortionExtractor:
 
