@@ -9,12 +9,12 @@ from textacy.preprocessing import pipeline, normalize, remove
 
 def extract_df(pdf_path: Union[Path, str]) -> pd.DataFrame:
     extractor = PortionExtractor()
-    portions = extractor(pdf_path)
+    portions = extractor([pdf_path])
 
     return pd.DataFrame(portions)
 
 def extract_csv(pdf_path: Union[Path, str], 
-                output_path: Union[Path, str] = Path.cwd()) -> None:
+                output_path: Union[Path, str] = Path(__file__).parent) -> None:
     
     df = extract_df(pdf_path)
     df.to_csv(output_path)
@@ -43,7 +43,7 @@ class PortionExtractor:
                                               normalize.quotation_marks,
                                               remove.accents)
 
-    def __call__(self, pdf_paths: List[str]) -> Dict[str, List]:
+    def __call__(self, pdf_paths: List[Union[Path, str]]) -> Dict[str, List]:
         
         portions = {'Document Name': [],
                     'Page Number': [], 
