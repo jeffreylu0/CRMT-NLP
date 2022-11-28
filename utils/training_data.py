@@ -23,23 +23,34 @@ def convert_textcat_csv_to_spacy(csv_path: Union[Path, str],
 
     db.to_disk(output_path)
 
-# Entity annotation under 'Entity', 'Start', and 'End' fields
+# Entity annotation under 'Start', 'End', 'Label' fields
 def convert_ner_csv_to_spacy(csv_path: Union[Path, str],
                              output_path: Union[Path, str] = './ner_train.spacy') -> None:
     nlp = spacy.blank('en')
     df = pd.read_csv(csv_path)
     db = DocBin()
 
-    training_data = [(portion,[(entity, start, end)]) 
-                     for portion, entity, start, end 
-                     in zip(df['Text Portion'], df['Entity'], df['Start'], df['End'])]
-    
+    training_data = [(portion,[(start, end, label)]) 
+                        for portion, start, end, label
+                        in zip(df['Text Portion'], df['Start'], df['End'], df['Class'])]
+
     for text, annotations in training_data:
         doc = nlp(text)
         ents = []
-        for entity, start, end in annotations:
-            span = doc.char_span(start, end, label=entity)
+        for start, end, label in annotations:
+
+            entity = doc.text[start:end]
+
+            # Check if entity span has leading or trailing whitespaces. Truncate whitespaces to align start and end idx with document tokens
+            if entity[0] == ' ':
+                start += 1
+            if entity[-1] == ' ':
+                end -= 1
+
+            # Create Span with label
+            span = doc.char_span(start, end, label=label)
             ents.append(span)
+
         doc.ents = ents
         db.add(doc)
 
