@@ -1,0 +1,64 @@
+title: "Portion Classification"
+
+vars:
+  lang: "en"
+  train: "portions_training.csv"
+  dev: "portions_dev.csv"
+  config: "config.cfg"
+
+directories: ["assets", "corpus", "configs", "scripts", "training"]
+
+assets:
+  - dest: "assets/${vars.train}"
+    description: "Training data in CSV format with each portion labeled"
+  - dest: "assets/${vars.dev}"
+    description: "Development data in CSV format with each portion labeled"
+
+workflows:
+  all:
+    - convert
+    - train
+    - evaluate
+    - register
+
+commands:
+  - name: "convert"
+    help: "Convert data to .spacy binary format"
+    script:
+     - "python scripts/convert.py assets/${vars.train} corpus/train.spacy"
+     - "python scripts/convert.py assets/${vars.dev} corpus/dev.spacy"
+    deps:
+     - assets/${vars.train}
+     - assets/${vars.dev}
+     - scripts/convert.py
+    outputs:
+     - "corpus/train.spacy"
+     - "corpus/dev.spacy"
+  
+  - name: "train"
+    help: "Train the portion classification model"
+    script:
+     - "python -m spacy train configs/${vars.config} --output training/ --paths.train corpus/train.spacy --paths.dev corpus/dev.spacy --nlp.lang ${vars.lang}"
+    deps:
+      - "configs/${vars.config}"
+      - "corpus/train.spacy"
+      - "corpus/dev.spacy"
+    outputs:
+     - "training/model-best"
+
+  - name: "evaluate"
+    help: "Evaluate the model and track metrics with MLFlow"
+    script:
+     - "python scripts/evaluate.py training/model-best corpus/dev.spacy"
+    deps:
+     - "scripts/evaluate.py"
+     - "training/model-best"
+     - "corpus/dev.spacy"
+    
+  - name: "register"
+    help: "Register evaluated model to MLFlow model registry"
+    script:
+    - "python scripts/register.py training/model-best"
+    deps:
+    - "scripts/register.py"
+    - "training/model-best"
