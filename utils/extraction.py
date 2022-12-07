@@ -6,19 +6,6 @@ from typing import List, Dict, Union
 from pathlib import Path
 from textacy.preprocessing import pipeline, normalize, remove
 
-
-def extract_df(pdf_path: Union[Path, str]) -> pd.DataFrame:
-    extractor = PortionExtractor()
-    portions = extractor([pdf_path])
-
-    return pd.DataFrame(portions)
-
-def extract_csv(pdf_path: Union[Path, str], 
-                output_path: Union[Path, str] = Path(__file__).parent) -> None:
-    
-    df = extract_df(pdf_path)
-    df.to_csv(output_path)
-
 class PortionExtractor:
 
     def __init__(self):
@@ -35,13 +22,13 @@ class PortionExtractor:
                                          (\(S\/\/REL\ TO\ USA,\ FVEY\))""",
                                          flags=regex.VERBOSE)
 
-        # Textacy text preprocessing pipline
+        # Textacy preprocessing pipeline
         self.preprocessor = pipeline.make_pipeline(normalize.unicode,
-                                              normalize.whitespace,
-                                              normalize.bullet_points,
-                                              normalize.hyphenated_words,
-                                              normalize.quotation_marks,
-                                              remove.accents)
+                                               normalize.whitespace,
+                                               normalize.bullet_points,
+                                               normalize.hyphenated_words,
+                                               normalize.quotation_marks,
+                                               remove.accents)                                         
 
     def __call__(self, pdf_paths: List[Union[Path, str]]) -> Dict[str, List]:
         
@@ -76,13 +63,17 @@ class PortionExtractor:
 
         # Preprocess and remove newlines                                    
         return [self.preprocessor(match).replace('\n', '') for match in matches]
+
+def main(input_path: Union[Path, str], 
+         output_path: Union[Path, str] = Path(__file__).parent) -> None:
     
+    extractor = PortionExtractor()
+    portions_df = pd.DataFrame(extractor([input_path]))
+    portions_df.to_csv(output_path)
+
 if __name__ == '__main__':
 
-    extractor = PortionExtractor()
-    portions = extractor(sys.argv[1:])
-    df = pd.DataFrame(portions)
-    print(portions)
+    main(sys.argv[1])
         
     
     
