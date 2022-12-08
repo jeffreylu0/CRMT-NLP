@@ -1,8 +1,8 @@
 import fitz
 import regex
-import sys
 import pandas as pd
-from typing import List, Dict, Union
+import typer
+from typing import List, Dict
 from pathlib import Path
 from textacy.preprocessing import pipeline, normalize, remove
 
@@ -30,7 +30,7 @@ class PortionExtractor:
                                                normalize.quotation_marks,
                                                remove.accents)                                         
 
-    def __call__(self, pdf_paths: List[Union[Path, str]]) -> Dict[str, List]:
+    def __call__(self, pdf_paths: List[str]) -> Dict[str, List]:
         
         portions = {'Document Name': [],
                     'Page Number': [], 
@@ -45,6 +45,7 @@ class PortionExtractor:
                 filtered_matches = self.filter_matches(regex.split(self.pattern, text)) # filter regex matches
                 clean_matches = self.preprocess_matches(filtered_matches)
 
+                # Add fields
                 portions['Document Name'].extend([doc_name] * len(clean_matches))
                 portions['Page Number'].extend([page_num] * len(clean_matches))
                 portions['Text Portion'].extend(clean_matches)
@@ -64,16 +65,19 @@ class PortionExtractor:
         # Preprocess and remove newlines                                    
         return [self.preprocessor(match).replace('\n', '') for match in matches]
 
-def main(input_path: Union[Path, str], 
-         output_path: Union[Path, str] = Path(__file__).parent) -> None:
-    
+def main(input_path: str = typer.Argument(..., help='Input path to PDF document'), 
+         output_path: str = typer.Argument('./output.csv', help='Output path to CSV file')) -> None:
+
+    assert Path(input_path).suffix == '.pdf', "Please use PDF file as input"
+    assert Path(output_path).suffix == '.csv', "Please specify CSV file as output"
+
     extractor = PortionExtractor()
     portions_df = pd.DataFrame(extractor([input_path]))
     portions_df.to_csv(output_path)
 
 if __name__ == '__main__':
 
-    main(sys.argv[1])
+    typer.run(main)
         
     
     
