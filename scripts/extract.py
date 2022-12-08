@@ -73,7 +73,7 @@ def main(input_path: str = typer.Argument(..., help='Input path to PDF document'
 
     extractor = PortionExtractor()
     portions_df = pd.DataFrame(extractor([input_path]))
-    portions_df.to_csv(output_path)
+    portions_df.to_csv(output_path, index=False)
 
 if __name__ == '__main__':
 
