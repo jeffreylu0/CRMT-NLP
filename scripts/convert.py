@@ -1,15 +1,22 @@
 import spacy
-import sys
+import typer
 import pandas as pd
 from pathlib import Path
-from typing import Union
+from typing import List
 from spacy.tokens import DocBin
 
-# Labels under 'Class' field
-def convert_textcat_csv_to_spacy(csv_path: Union[Path, str],
-                                 output_path: Union[Path, str] = './textcat_train.spacy') -> None:
-    nlp = spacy.blank('en')
-    df = pd.read_csv(csv_path)
+nlp = spacy.blank('en')
+
+def convert_textcat_csv_to_spacy(input_path: str,
+                                 output_path: str = './textcat_train.spacy') -> None:
+
+    df = pd.read_csv(input_path, index_col=False)
+
+    # Check if fields are correct
+    fields = ['Document Name', 'Page Number', 'Text Portion', 'Class']
+    input_columns = df.columns.values
+    assert (len(input_columns) == len(fields)) and (all(input_columns == fields)), f"Fields should be {fields}"
+
     db = DocBin()
 
     training_data = [(portion,label) for portion,label in zip(df['Text Portion'], df['Class'])]
@@ -24,10 +31,15 @@ def convert_textcat_csv_to_spacy(csv_path: Union[Path, str],
     db.to_disk(output_path)
 
 # Entity annotation under 'Start', 'End', 'Label' fields
-def convert_ner_csv_to_spacy(csv_path: Union[Path, str],
-                             output_path: Union[Path, str] = './ner_train.spacy') -> None:
-    nlp = spacy.blank('en')
-    df = pd.read_csv(csv_path)
+def convert_ner_csv_to_spacy(input_path: str,
+                             output_path: str = './ner_train.spacy') -> None:
+
+    df = pd.read_csv(input_path, index_col=False)
+
+    # Check if fields are correct
+    fields = ['Document Name', 'Page Number', 'Text Portion', 'Entity', 'Start', 'End', 'Class']
+    input_columns = df.columns.values
+    assert (len(input_columns) == len(fields)) and (all(input_columns == fields)), f"Fields should be {fields}"
     db = DocBin()
 
     training_data = [(portion,[(start, end, label)]) 
@@ -55,7 +67,19 @@ def convert_ner_csv_to_spacy(csv_path: Union[Path, str],
         db.add(doc)
 
     db.to_disk(output_path)
-    
+
+def main(ner: bool = typer.Option(False, help='Whether input labeled data is for NER. Default is text classification'),
+         input_path: str = typer.Argument(..., help='Input path to labeled data in CSV format'),
+         output_path: str = typer.Argument('./output.spacy', help='Output path for binary .spacy file')):
+
+    assert Path(input_path).suffix == '.csv', "Please use CSV file as input"
+    assert Path(output_path).suffix == '.spacy', "Please specify .spacy file as output"
+
+    if ner:
+        convert_ner_csv_to_spacy(input_path, output_path)
+    else:
+        convert_textcat_csv_to_spacy(input_path, output_path)
+
 if __name__ == '__main__':
-    convert_textcat_csv_to_spacy(sys.argv[1], sys.argv[2])
+    typer.run(main)
 
