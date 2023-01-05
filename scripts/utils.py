@@ -9,9 +9,9 @@ from transformers import RobertaTokenizerFast
 # https://spacy.io/usage/linguistic-features/#custom-tokenizer-example2
 class RobertaTokenizerSpacy:
 
-    def __init__(self, model_path: Union[str, Path]):
+    def __init__(self, model: Union[str, Path]):
 
-        self._tokenizer = RobertaTokenizerFast.from_pretrained(model_path)
+        self._tokenizer = RobertaTokenizerFast.from_pretrained(model)
         self.vocab = Vocab(strings=list(self._tokenizer.get_vocab().keys())) # setup Vocab object for Doc
     
     def __call__(self, text: str) -> Doc:
@@ -34,9 +34,10 @@ class RobertaTokenizerSpacy:
 
 # Add RoBERTa tokenizer to use in training config
 @spacy.registry.tokenizers("roberta-tokenizer")
-def create_roberta_tokenzer():
+def create_roberta_tokenzer(model: Union[str, Path]):
     def roberta_tokenizer(nlp):
-
+        return RobertaTokenizerSpacy(model=model)
+    return roberta_tokenizer
 
 # Add custom MLFlow logger for Databricks use
 # https://spacy.io/usage/training#custom-logging
