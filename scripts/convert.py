@@ -7,15 +7,19 @@ from spacy.tokens import DocBin
 
 nlp = spacy.blank('en')
 
+# fields to check for in text classifcation training data
+TEXTCAT_FIELDS = ['Document Name', 'Page Number', 'Text Portion', 'Class'] 
+# fields to check for in named entity recognition training data
+NER_FIELDS = ['Document Name', 'Page Number', 'Text Portion', 'Entity', 'Start', 'End', 'Class'] 
+
 def convert_textcat_csv_to_spacy(input_path: str,
                                  output_path: str = './textcat_train.spacy') -> None:
 
     df = pd.read_csv(input_path, index_col=False)
 
     # Check if fields are correct
-    fields = ['Document Name', 'Page Number', 'Text Portion', 'Class']
     input_columns = df.columns.values
-    assert (len(input_columns) == len(fields)) and (all(input_columns == fields)), f"Fields should be {fields}"
+    assert (len(input_columns) == len(TEXTCAT_FIELDS)) and (all(input_columns == TEXTCAT_FIELDS)), f"Fields should be {TEXTCAT_FIELDS}"
 
     db = DocBin()
 
@@ -37,9 +41,8 @@ def convert_ner_csv_to_spacy(input_path: str,
     df = pd.read_csv(input_path, index_col=False)
 
     # Check if fields are correct
-    fields = ['Document Name', 'Page Number', 'Text Portion', 'Entity', 'Start', 'End', 'Class']
     input_columns = df.columns.values
-    assert (len(input_columns) == len(fields)) and (all(input_columns == fields)), f"Fields should be {fields}"
+    assert (len(input_columns) == len(NER_FIELDS)) and (all(input_columns == NER_FIELDS)), f"Fields should be {NER_FIELDS}"
     db = DocBin()
 
     training_data = [(portion,[(start, end, label)]) 
